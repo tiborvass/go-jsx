@@ -1,3 +1,6 @@
+// Jsx transpiles React JSX code to Javascript.
+//
+// This package also provides primitives to write your own visitors
 package jsx
 
 import (
@@ -8,12 +11,14 @@ import (
 	"github.com/robertkrimen/otto/parser"
 )
 
+// File takes the name of a JSX file as input and returns the Javascript version of the content.
 func File(filename string) (string, error) {
 	fset := new(file.FileSet)
 	program, err := parser.ParseFile(fset, filename, nil, 0)
 	return eval(fset, program, err)
 }
 
+// String takes JSX source code as input and returns Javascript.
 func String(src string) (string, error) {
 	fset := new(file.FileSet)
 	program, err := parser.ParseFile(fset, "", src, 0)
@@ -30,7 +35,7 @@ func eval(fset *file.FileSet, program *ast.Program, err error) (string, error) {
 		return "", fmt.Errorf("unexpected error: %v", err)
 	}
 
-	v := &React{fset: fset, errList: errList, file: program.File}
-	ast.Walk(v, program)
-	return v.result.String(), nil
+	r := NewReact(fset, errList, program.File)
+	Walk(r, program)
+	return r.String(), nil
 }

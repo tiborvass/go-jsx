@@ -10,6 +10,8 @@ import (
 	"github.com/robertkrimen/otto/parser"
 )
 
+// React implements Visitor.
+// Should be called with Walk(NewReact(...), node).
 type React struct {
 	fset    *file.FileSet
 	errList parser.ErrorList
@@ -18,11 +20,24 @@ type React struct {
 	last    file.Idx
 }
 
-func (v *React) Visit(node ast.Node) ast.Visitor {
+// NewReact returns a ready-to-use React object.
+func NewReact(fset *file.FileSet, errList parser.ErrorList, file *file.File) *React {
+	return &React{fset: fset, errList: errList, file: file}
+}
+
+// String returns the Javascript version of what the React visitor processed so far.
+func (v *React) String() string {
+	return v.result.String()
+}
+
+// TODO: refactor this and expose only something like the current `v.str()` to spare
+// others from reimplementing the whole visitor when all they need is to provide a
+// string given an *ElementNode.
+func (v *React) Visit(node ast.Node) Visitor {
 	switch n := node.(type) {
 	case *ast.Program:
 		for _, stmt := range n.Body {
-			ast.Walk(v, stmt)
+			Walk(v, stmt)
 		}
 		src := v.file.Source()
 		// print the rest
@@ -33,13 +48,16 @@ func (v *React) Visit(node ast.Node) ast.Visitor {
 	case *ast.BadExpression:
 		for _, err := range v.errList {
 			pos := v.fset.Position(n.From)
+			// This is the hack to "identify" JSX code within Javascript.
 			if pos.Column == err.Position.Column && pos.Line == err.Position.Line && strings.Contains(err.Message, "Unexpected token <") {
 				src := v.file.Source()
+				// Print everything from last time up until `<`, not included.
+				v.result.WriteString(src[v.last : n.From-1])
 				p := Parser{lexer: lex(src[n.From-1 : n.To-1])}
 				if err := p.Parse(); err != nil {
 					panic(err)
 				}
-				v.result.WriteString(src[v.last : n.From-1])
+				// Print the JSX code
 				v.result.WriteString(v.str(p.root))
 				v.last = n.From + file.Idx(p.lastPos)
 				return v
