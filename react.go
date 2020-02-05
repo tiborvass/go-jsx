@@ -33,11 +33,11 @@ func (v *React) String() string {
 // TODO: refactor this and expose only something like the current `v.str()` to spare
 // others from reimplementing the whole visitor when all they need is to provide a
 // string given an *ElementNode.
-func (v *React) Visit(node ast.Node) Visitor {
+func (v *React) Enter(node ast.Node) ast.Visitor {
 	switch n := node.(type) {
 	case *ast.Program:
 		for _, stmt := range n.Body {
-			Walk(v, stmt)
+			ast.Walk(v, stmt)
 		}
 		src := v.file.Source()
 		// print the rest
@@ -188,4 +188,8 @@ func (r *React) ensureDisplayName(name string, init ast.Expression) {
 	r.result.WriteString(s)
 	r.last += file.Idx(len(s))
 	r.result.WriteString(`displayName: "` + name + `",`)
+}
+
+func (v *React) Exit(node ast.Node) {
+
 }
