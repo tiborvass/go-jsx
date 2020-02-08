@@ -49,7 +49,7 @@ func (v *React) Enter(node ast.Node) ast.Visitor {
 		for _, err := range v.errList {
 			pos := v.fset.Position(n.From)
 			// This is the hack to "identify" JSX code within Javascript.
-			if pos.Column == err.Position.Column && pos.Line == err.Position.Line && strings.Contains(err.Message, "Unexpected token <") {
+			if pos.Column == err.Position.Column-1 && pos.Line == err.Position.Line && strings.Contains(err.Message, "Unexpected token <") {
 				src := v.file.Source()
 				// Print everything from last time up until `<`, not included.
 				v.result.WriteString(src[v.last : n.From-1])
