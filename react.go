@@ -33,11 +33,11 @@ func (v *React) String() string {
 // TODO: refactor this and expose only something like the current `v.str()` to spare
 // others from reimplementing the whole visitor when all they need is to provide a
 // string given an *ElementNode.
-func (v *React) Visit(node ast.Node) Visitor {
+func (v *React) Enter(node ast.Node) ast.Visitor {
 	switch n := node.(type) {
 	case *ast.Program:
 		for _, stmt := range n.Body {
-			Walk(v, stmt)
+			ast.Walk(v, stmt)
 		}
 		src := v.file.Source()
 		// print the rest
@@ -49,7 +49,7 @@ func (v *React) Visit(node ast.Node) Visitor {
 		for _, err := range v.errList {
 			pos := v.fset.Position(n.From)
 			// This is the hack to "identify" JSX code within Javascript.
-			if pos.Column == err.Position.Column && pos.Line == err.Position.Line && strings.Contains(err.Message, "Unexpected token <") {
+			if pos.Column == err.Position.Column-1 && pos.Line == err.Position.Line && strings.Contains(err.Message, "Unexpected token <") {
 				src := v.file.Source()
 				// Print everything from last time up until `<`, not included.
 				v.result.WriteString(src[v.last : n.From-1])
@@ -188,4 +188,8 @@ func (r *React) ensureDisplayName(name string, init ast.Expression) {
 	r.result.WriteString(s)
 	r.last += file.Idx(len(s))
 	r.result.WriteString(`displayName: "` + name + `",`)
+}
+
+func (v *React) Exit(node ast.Node) {
+
 }

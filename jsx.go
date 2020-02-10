@@ -36,6 +36,6 @@ func eval(fset *file.FileSet, program *ast.Program, err error) (string, error) {
 	}
 
 	r := NewReact(fset, errList, program.File)
-	Walk(r, program)
+	ast.Walk(r, program)
 	return r.String(), nil
 }
